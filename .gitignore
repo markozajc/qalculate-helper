@@ -1,0 +1,5 @@
+# environment
+/.build_env
+
+# binary
+/libot-qalculate-helper
