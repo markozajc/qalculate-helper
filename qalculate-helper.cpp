@@ -141,7 +141,7 @@ int main(int argc, char** argv) {
 		perror("couldn't remove groups");
 		abort();
 	}
-	
+
 	if (setresgid(UID, UID, UID)) {
 		perror("couldn't set gid");
 		abort();
