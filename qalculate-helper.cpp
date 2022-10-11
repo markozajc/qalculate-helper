@@ -1,3 +1,4 @@
+#include <sstream>
 #include <libqalculate/qalculate.h>
 #ifdef UID
 	#include <grp.h>
@@ -36,6 +37,36 @@
 #define ECANTFETCH 103;
 
 using std::string;
+using std::stringstream;
+using std::getline;
+
+int evaluate_single(EvaluationOptions *eo, MathStructure *result, int line_number, string expression) {
+	if (!CALCULATOR->calculate(result, CALCULATOR->unlocalizeExpression(expression), TIMEOUT_CALC, *eo))
+		return ETIMEOUT;
+
+	CalculatorMessage* message;
+	while ((message = CALCULATOR->message())) {
+		TYPE_MESSAGE;
+		switch(message->type()) {
+			case MESSAGE_INFORMATION:
+				LEVEL_INFO;
+				break;
+			case MESSAGE_WARNING:
+				LEVEL_WARNING;
+				break;
+			case MESSAGE_ERROR:
+				LEVEL_ERROR;
+				break;
+			default:
+				LEVEL_UNKNOWN;
+				break;
+		}
+		printf("line %d: ", line_number);
+		fputs(message->c_message(), stdout); SEPARATOR;
+		CALCULATOR->nextMessage();
+	}
+	return 0;
+}
 
 int evaluate(char* expression, char* mode) {
 	CALCULATOR->setExchangeRatesWarningEnabled(false);
@@ -46,8 +77,6 @@ int evaluate(char* expression, char* mode) {
 #ifdef HAS_PLOT
 	CALCULATOR->getActiveFunction("plot")->destroy(); // no use
 #endif
-	CALCULATOR->getActiveFunction("function")->destroy(); // not sure what this does exactly
-	CALCULATOR->getActiveFunction("save")->destroy(); // sounds like state
 	CALCULATOR->getActiveVariable("uptime")->destroy(); // why would you
 
 	PrintOptions po;
@@ -84,29 +113,15 @@ int evaluate(char* expression, char* mode) {
 	CALCULATOR->setPrecision(precision);
 
 	MathStructure result;
-	if(!CALCULATOR->calculate(&result, CALCULATOR->unlocalizeExpression(expression), TIMEOUT_CALC, eo))
-		return ETIMEOUT;
-
-	CalculatorMessage* message;
-	while ((message = CALCULATOR->message())) {
-		TYPE_MESSAGE;
-		switch(message->type()) {
-			case MESSAGE_INFORMATION:
-				LEVEL_INFO;
-				break;
-			case MESSAGE_WARNING:
-				LEVEL_WARNING;
-				break;
-			case MESSAGE_ERROR:
-				LEVEL_ERROR;
-				break;
-			default:
-				LEVEL_UNKNOWN;
-				break;
-		}
-		fputs(message->c_message(), stdout); SEPARATOR;
-		CALCULATOR->nextMessage();
-	}
+    stringstream expressions(expression);
+    string single_expression;
+    int line_number = 1;
+    int return_value;
+    while (getline(expressions, single_expression, '\n')) {
+        if ((return_value = evaluate_single(&eo, &result, line_number, single_expression)))
+        	return return_value;
+        line_number++;
+    }
 
 	string string_result = CALCULATOR->print(result, TIMEOUT_PRINT, po);
 

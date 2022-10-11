@@ -1,19 +1,19 @@
-include .build_env
-export
+#include .build_env
+#export
 
 NAME='qalculate-helper'
-FLAGS+=-I${QALCULATE_INCLUDE_PATH}
-FLAGS+=-L${QALCULATE_LIBRARY_PATH}
-FLAGS+=-Wl,-Bstatic
+#FLAGS+=-I${QALCULATE_INCLUDE_PATH}
+#FLAGS+=-L${QALCULATE_LIBRARY_PATH}
+#FLAGS+=-Wl,-Bstatic
 FLAGS+=-lqalculate
-FLAGS+=-Wl,-Bdynamic
-FLAGS+=-lmpfr
-FLAGS+=-lgmp
-FLAGS+=-licuuc
-FLAGS+=-lxml2
-FLAGS+=-lcurl
-FLAGS+=-lpthread
-FLAGS+=-lcap-ng
+#FLAGS+=-Wl,-Bdynamic
+#FLAGS+=-lmpfr
+#FLAGS+=-lgmp
+#FLAGS+=-licuuc
+#FLAGS+=-lxml2
+#FLAGS+=-lcurl
+#FLAGS+=-lpthread
+#FLAGS+=-lcap-ng
 FLAGS+=-Wall
 FLAGS+=-Wextra
 FLAGS+=-ansi
@@ -29,4 +29,4 @@ endif
 
 all:
 	g++ qalculate-helper.cpp $(FLAGS)
-	strip $(NAME)
+	#strip $(NAME)
