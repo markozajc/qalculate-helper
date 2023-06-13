@@ -13,7 +13,12 @@ FLAGS+=-licuuc
 FLAGS+=-lxml2
 FLAGS+=-lcurl
 FLAGS+=-lpthread
-FLAGS+=-lcap-ng
+ifneq ($(origin SETUID), undefined)
+	FLAGS+=-lcap-ng
+endif
+ifneq ($(origin SECCOMP), undefined)
+	FLAGS+=-lseccomp
+endif
 FLAGS+=-Wall
 FLAGS+=-Wextra
 FLAGS+=-ansi
@@ -25,6 +30,9 @@ FLAGS+=-o $(NAME)
 FLAGS+=-march=native
 ifneq ($(origin SETUID), undefined)
 	FLAGS+=-DUID=${SETUID}
+endif
+ifneq ($(origin SECCOMP), undefined)
+	FLAGS+=-DSECCOMP
 endif
 
 all:

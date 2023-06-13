@@ -7,6 +7,12 @@
 	#warning "Not doing setuid/setgid, do not use in production!"
 #endif
 
+#ifdef SECCOMP
+	#include <seccomp.h>
+#else
+	#warning "Not doing seccomp, do not use in production!"
+#endif
+
 #define PRECISION_DEFAULT 20
 #define PRECISION_HIGH 1024
 
@@ -99,6 +105,30 @@ int evaluate(char* expression, char* mode) {
 	eo.approximation = APPROXIMATION_TRY_EXACT;
 	eo.parse_options.unknowns_enabled = false;
 	eo.sync_units = false;
+
+#ifdef SECCOMP
+	scmp_filter_ctx ctx;
+	ctx = seccomp_init(SCMP_ACT_KILL);
+    /*   0 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0);
+    /*   1 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);
+    /*   9 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
+    /*  10 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mprotect), 0);
+    /*  11 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(munmap), 0);
+    /*  13 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigaction), 0);
+    /*  14 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigprocmask), 0);
+    /*  24 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sched_yield), 0);
+    /* 230 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_nanosleep), 0);
+    /* 231 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
+    /* 262 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 0);
+    /* 273 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_robust_list), 0);
+    /* 334 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rseq), 0);
+    /* 435 */ seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone3), 0);
+	int err = seccomp_load(ctx);
+	if (err) {
+		printf("couldn't seccomp: %d\n", err);
+		abort();
+	}
+#endif
 
 	int precision = PRECISION_DEFAULT;
 	if (strcmp(mode, MODE_EXACT) == 0) {
