@@ -153,7 +153,7 @@ int evaluate(char* expression, char* mode) {
         line_number++;
     }
 
-	string string_result = CALCULATOR->print(result, TIMEOUT_PRINT, po);
+	string string_result = CALCULATOR->print(result, TIMEOUT_PRINT, po, false, 1, TAG_TYPE_TERMINAL);
 
 	if (string_result.ends_with(CALCULATOR->timedOutString())) {
 		return ETIMEOUT;
