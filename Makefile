@@ -19,8 +19,7 @@ endif
 ifneq ($(origin SECCOMP), undefined)
 	FLAGS+=-lseccomp
 endif
-FLAGS+=-Wall
-FLAGS+=-Wextra
+FLAGS+=-Wall -Wextra
 FLAGS+=-ansi
 FLAGS+=-O3
 FLAGS+=-D_FORTIFY_SOURCE=2

@@ -35,8 +35,8 @@
 
 #define COMMAND_UPDATE "update"
 
-#define MODE_HIGH_PRECISION "precision"
-#define MODE_EXACT "exact"
+#define MODE_HIGH_PRECISION 2
+#define MODE_EXACT 3
 
 #define ENOARG 101;
 #define ETIMEOUT 102;
@@ -53,7 +53,7 @@ int evaluate_single(EvaluationOptions *eo, MathStructure *result, int line_numbe
 	CalculatorMessage* message;
 	while ((message = CALCULATOR->message())) {
 		TYPE_MESSAGE;
-		switch(message->type()) {
+		switch (message->type()) {
 			case MESSAGE_INFORMATION:
 				LEVEL_INFO;
 				break;
@@ -74,7 +74,7 @@ int evaluate_single(EvaluationOptions *eo, MathStructure *result, int line_numbe
 	return 0;
 }
 
-int evaluate(char* expression, char* mode) {
+int evaluate(char *expression, char *mode, char *base) {
 	CALCULATOR->setExchangeRatesWarningEnabled(false);
 	CALCULATOR->loadExchangeRates();
 	CALCULATOR->loadGlobalDefinitions();
@@ -86,6 +86,10 @@ int evaluate(char* expression, char* mode) {
 	CALCULATOR->getActiveVariable("uptime")->destroy(); // why would you
 
 	PrintOptions po;
+
+	if (strlen(base) == 1)
+		po.base = *base;
+
 	po.number_fraction_format = FRACTION_DECIMAL;
 	po.interval_display = INTERVAL_DISPLAY_PLUSMINUS;
 	po.use_unicode_signs = true;
@@ -131,13 +135,15 @@ int evaluate(char* expression, char* mode) {
 #endif
 
 	int precision = PRECISION_DEFAULT;
-	if (strcmp(mode, MODE_EXACT) == 0) {
-		eo.approximation = APPROXIMATION_EXACT;
-		po.number_fraction_format = FRACTION_DECIMAL_EXACT;
+	if (strlen(mode) == 1) {
+		if (*mode == MODE_EXACT) {
+			eo.approximation = APPROXIMATION_EXACT;
+			po.number_fraction_format = FRACTION_DECIMAL_EXACT;
 
-	} else if (strcmp(mode, MODE_HIGH_PRECISION) == 0) {
-		precision = PRECISION_HIGH;
-		po.indicate_infinite_series = false;
+		} else if (*mode == MODE_HIGH_PRECISION) {
+			precision = PRECISION_HIGH;
+			po.indicate_infinite_series = false;
+		}
 	}
 
 	CALCULATOR->setPrecision(precision);
@@ -182,7 +188,7 @@ int update() {
 
 int main(int argc, char** argv) {
 #ifdef UID
-	if(setgroups(0, {})) {
+	if (setgroups(0, {})) {
 		perror("couldn't remove groups");
 		abort();
 	}
@@ -203,7 +209,7 @@ int main(int argc, char** argv) {
 		abort();
 	}
 	int err = capng_apply(CAPNG_SELECT_BOTH);
-	if(err) {
+	if (err) {
 		printf("couldn't drop caps: %d\n", err);
 		abort();
 	}
@@ -216,8 +222,10 @@ int main(int argc, char** argv) {
 	if (argc == 2) {
 		if (strcmp(argv[1], COMMAND_UPDATE) == 0)
 			return update();
+		else
+			return 1;
 	} else {
-		return evaluate(argv[1], argv[2]);
+		return evaluate(argv[1], argv[2], argv[3]);
 	}
 }
 
