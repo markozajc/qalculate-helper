@@ -45,6 +45,7 @@
 using std::string;
 using std::stringstream;
 using std::getline;
+using std::atoi;
 
 int evaluate_single(EvaluationOptions *eo, MathStructure *result, int line_number, string expression) {
 	if (!CALCULATOR->calculate(result, CALCULATOR->unlocalizeExpression(expression), TIMEOUT_CALC, *eo))
@@ -87,8 +88,7 @@ int evaluate(char *expression, char *mode, char *base) {
 
 	PrintOptions po;
 
-	if (strlen(base) == 1)
-		po.base = *base;
+	po.base = atoi(base);
 
 	po.number_fraction_format = FRACTION_DECIMAL;
 	po.interval_display = INTERVAL_DISPLAY_PLUSMINUS;
@@ -135,15 +135,16 @@ int evaluate(char *expression, char *mode, char *base) {
 #endif
 
 	int precision = PRECISION_DEFAULT;
-	if (strlen(mode) == 1) {
-		if (*mode == MODE_EXACT) {
+	switch (atoi(mode)) {
+		case MODE_EXACT:
 			eo.approximation = APPROXIMATION_EXACT;
 			po.number_fraction_format = FRACTION_DECIMAL_EXACT;
+			break;
 
-		} else if (*mode == MODE_HIGH_PRECISION) {
+		case MODE_HIGH_PRECISION:
 			precision = PRECISION_HIGH;
 			po.indicate_infinite_series = false;
-		}
+			break;
 	}
 
 	CALCULATOR->setPrecision(precision);
