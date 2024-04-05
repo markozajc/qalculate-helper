@@ -2,8 +2,13 @@ include .build_env
 export
 
 NAME='qalculate-helper'
-FLAGS+=-I${QALCULATE_INCLUDE_PATH}
-FLAGS+=-L${QALCULATE_LIBRARY_PATH}
+FLAGS+=-Iinclude/
+ifneq ($(origin QALCULATE_INCLUDE_PATH), undefined)
+	FLAGS+=-I${QALCULATE_INCLUDE_PATH}
+endif
+ifneq ($(origin QALCULATE_LIBRARY_PATH), undefined)
+	FLAGS+=-L${QALCULATE_LIBRARY_PATH}
+endif
 FLAGS+=-Wl,-Bstatic
 FLAGS+=-lqalculate
 FLAGS+=-Wl,-Bdynamic
@@ -24,7 +29,7 @@ FLAGS+=-ansi
 FLAGS+=-O3
 FLAGS+=-D_FORTIFY_SOURCE=2
 FLAGS+=-fPIE
-FLAGS+=-std=c++2a
+FLAGS+=-std=c++17
 FLAGS+=-o $(NAME)
 FLAGS+=-march=native
 ifneq ($(origin SETUID), undefined)
@@ -35,5 +40,5 @@ ifneq ($(origin SECCOMP), undefined)
 endif
 
 all:
-	g++ qalculate-helper.cpp $(FLAGS)
+	g++ src/security_util.cpp src/exchange_update_exception.cpp src/qalculate_exception.cpp src/qalculate-helper.cpp src/timeout_exception.cpp $(FLAGS)
 	strip $(NAME)

@@ -1,0 +1,9 @@
+#pragma once
+
+#define PRECISION_DEFAULT 20
+#define PRECISION_HIGH 900
+
+#define MIN_DECIMALS 20
+#define TIMEOUT_CALC 2000
+#define TIMEOUT_PRINT 2000
+#define TIMEOUT_UPDATE 30

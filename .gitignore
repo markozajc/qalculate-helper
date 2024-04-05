@@ -1,5 +1,13 @@
+# IDE
+/.project
+/.cproject
+/.vscode/
+/.settings/
+
 # environment
 /.build_env
 
 # binary
 /qalculate-helper
+/target/
+/.debug/
