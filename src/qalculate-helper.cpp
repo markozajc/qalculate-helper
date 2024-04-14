@@ -124,7 +124,7 @@ MathStructure evaluate_all(const vector<string> &expressions, const EvaluationOp
 }
 
 void print_result(Calculator *calc, const MathStructure &result_struct, const PrintOptions &po, int mode,
-				  bool approximate) {
+				  bool &approximate) {
 	string result = calc->print(result_struct, TIMEOUT_PRINT, po, false, mode_set(mode, MODE_NOCOLOR) ? 0 : 1,
 								TAG_TYPE_TERMINAL);
 
