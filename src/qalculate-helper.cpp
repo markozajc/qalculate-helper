@@ -147,7 +147,7 @@ static EvaluationOptions get_evaluationoptions() {
 	return eo;
 }
 
-static PrintOptions get_printoptions(int base, bool &approximate) {
+static PrintOptions get_printoptions(int base, bool *approximate) {
 	PrintOptions po;
 	po.base = base;
 	po.number_fraction_format = FRACTION_DECIMAL;
@@ -161,7 +161,7 @@ static PrintOptions get_printoptions(int base, bool &approximate) {
 	po.show_ending_zeroes = false;
 	//po.preserve_precision = true;
 	//po.restrict_to_parent_precision = false;
-	po.is_approximate = &approximate;
+	po.is_approximate = approximate;
 	return po;
 }
 
@@ -172,7 +172,7 @@ static void evaluate(Calculator *calc, const vector<string> &expressions, unsign
 
 	bool approximate = false;
 
-	PrintOptions po = get_printoptions(base, approximate);
+	PrintOptions po = get_printoptions(base, &approximate);
 	EvaluationOptions eo = get_evaluationoptions();
 	set_precision(calc, mode, eo, po);
 
