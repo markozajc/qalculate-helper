@@ -9,6 +9,7 @@ endif
 ifneq ($(origin QALCULATE_LIBRARY_PATH), undefined)
 	FLAGS+=-L${QALCULATE_LIBRARY_PATH}
 endif
+FLAGS+=-Wl,-z muldefs
 FLAGS+=-Wl,-Bstatic
 FLAGS+=-lqalculate
 FLAGS+=-Wl,-Bdynamic
