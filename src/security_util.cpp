@@ -69,6 +69,9 @@ static int now_day;
 static suseconds_t now_usec;
 static std::time_t now_sec;
 
+// "now", "today", "yesterday", etc. all depend on the openat syscall. I've opted to instead get the time before
+// seccomping and then return it by replacing these two functions. This does seem dirty and requires an extra linker
+// flag when doing a static link, but it does work.
 void QalculateDateTime::setToCurrentDate() {
 	parsed_string.clear();
 	set(now_year, now_month, now_day);
