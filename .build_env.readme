@@ -1,0 +1,41 @@
+## Set these options to your liking and, rename the file to .build_env, and run
+## `make` to build.
+
+# These options point to the libqalculate build directory, in case it's
+# separate from the default system one
+QALCULATE_INCLUDE_PATH='/usr/include'
+QALCULATE_LIBRARY_PATH='/usr/lib/x86_64-linux-gnu/'
+
+# [security] This controls setuid/setgid behaviour of qalculate-helper, and
+# requires some setup. You need to create a user and a group, get their uid and
+# gid (qalculate-helper assumes they're the same), chown the executable to the
+# uid:gid, add suid and sgid mode, and set setgid and setpcap capabilities.
+# For example:
+# 1. Open /etc/passwd and add the following line (pick a different uid and gid
+#    if 500 is already used, but make sure they're the same)
+#    
+#       qalc:x:500:500::/opt/qalculate-helper:/bin/false
+#
+# 2. Open /etc/group and add the following line
+#
+#       qalc:x:500:
+#
+# 3. (optional) Run `pwck` and `grpck` to correct shadow and gshadow databases
+# 4. Run `chown qalc:qalc qalculate-helper`, where qalculate-helper is the
+#    built qalculate-helper executable
+# 5. Run `chmod 6755 qalculate-helper`
+# 6. Run `setcap cap_setgid+ep cap_setpcap+ep qalculate-helper`
+SETUID='500'
+
+# [security] This controls seccomp behaviour. Issues with seccomp manifest as
+# "Bad system call" errors (exit code 159). In case this happens, refer to
+# `dmesg` for the violated syscall and whitelist it in
+# qalculate/helper/src/security_util.cpp. If you can, do contact me with
+# replication instructions so I can fix it on the upstream.
+SECCOMP=1
+
+# [security] This controls whether the clone(2) syscall is whitelisted. For
+# reasons unknown to me, qalculate-helper will refuse to run in Docker unless
+# this is enables, but seems to run just fine without it outside of Docker.
+# This has no effect if SECCOMP is set to 0.
+SECCOMP_ALLOW_CLONE=0

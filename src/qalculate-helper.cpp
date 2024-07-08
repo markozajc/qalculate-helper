@@ -143,7 +143,8 @@ static EvaluationOptions get_evaluationoptions() {
 	EvaluationOptions eo;
 	eo.approximation = APPROXIMATION_TRY_EXACT;
 	eo.parse_options.unknowns_enabled = false;
-	eo.sync_units = false;
+	// eo.sync_units = false; // causes issues with monetary conversion, eg x usd > 1 eur. no idea why I
+	                          // enabled this in the first place
 	return eo;
 }
 
