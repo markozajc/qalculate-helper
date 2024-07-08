@@ -3,19 +3,15 @@ export
 
 NAME='qalculate-helper'
 FLAGS+=-Iinclude/
-ifneq ($(origin QALCULATE_INCLUDE_PATH), undefined)
-	FLAGS+=-I${QALCULATE_INCLUDE_PATH}
-endif
-ifneq ($(origin QALCULATE_LIBRARY_PATH), undefined)
-	FLAGS+=-L${QALCULATE_LIBRARY_PATH}
-endif
-FLAGS+=-fuse-ld=mold
-FLAGS+=-Wl,-z muldefs
+FLAGS+=-I${LIBQALCULATE_PREFIX}/include
 FLAGS+=-Wl,-z now
-FLAGS+=-Wl,-z relro
-FLAGS+=-Wl,-Bstatic
-FLAGS+=-lqalculate
-FLAGS+=-Wl,-Bdynamic
+ifeq ($(LIBQALCULATE_STATIC_LINK), 1)
+	FLAGS+=-Wl,-z muldefs
+	FLAGS+=${LIBQALCULATE_PREFIX}/lib/libqalculate.a
+else
+	FLAGS+=-L${LIBQALCULATE_PREFIX}/lib
+	FLAGS+=-lqalculate
+endif
 FLAGS+=-lmpfr
 FLAGS+=-lgmp
 FLAGS+=-licuuc
@@ -25,7 +21,7 @@ FLAGS+=-lpthread
 ifneq ($(origin SETUID), undefined)
 	FLAGS+=-lcap-ng
 endif
-ifneq ($(origin SECCOMP), undefined)
+ifeq ($(SECCOMP), 1)
 	FLAGS+=-lseccomp
 endif
 FLAGS+=-Wall -Wextra -Wformat
@@ -40,15 +36,11 @@ FLAGS+=-march=native
 ifneq ($(origin SETUID), undefined)
 	FLAGS+=-DUID=${SETUID}
 endif
-ifneq ($(origin SECCOMP), undefined)
-	ifeq ($(SECCOMP), 1)
-		FLAGS+=-DSECCOMP
-	endif
+ifeq ($(SECCOMP), 1)
+	FLAGS+=-DSECCOMP
 endif
-ifneq ($(origin SECCOMP_ALLOW_CLONE), undefined)
-	ifeq ($(SECCOMP_ALLOW_CLONE), 1)
-		FLAGS+=-DSECCOMP_ALLOW_CLONE
-	endif
+ifeq ($(SECCOMP_ALLOW_CLONE), 1)
+	FLAGS+=-DSECCOMP_ALLOW_CLONE
 endif
 
 all:

@@ -1,10 +1,33 @@
 ## Set these options to your liking and, rename the file to .build_env, and run
 ## `make` to build.
 
-# These options point to the libqalculate build directory, in case it's
-# separate from the default system one
-QALCULATE_INCLUDE_PATH='/usr/include'
-QALCULATE_LIBRARY_PATH='/usr/lib/x86_64-linux-gnu/'
+## /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\
+## /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\
+##
+##    qalculate-helper assumes that libqalculate is compiled with
+##    --without-gnuplot-call, --disbale-insecure, and
+##    --enable-compiled-definitions. This most likely means you can't use your
+##    distribution's libqalculate package. You pass these options to autogen.sh
+##    when compiling libqalculate. Without the first two, you WILL BE prone to
+##    RCE (remote code execution) attacks via the command() function. Without
+##    the last one, dataset commands (eg. `planet()`) will not work due to
+##    seccomp violations.
+##
+##    If you're not linking statically, you'll also have to ensure the right
+##    libqalculate is loaded at runtime - you can verify with `ldd`. If not,
+##    set the LD_LIBRARY_PATH environment variable or use static linking.
+##
+##    YOU HAVE BEEN WARNED
+##
+## /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\
+## /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\
+
+# This option points to the libqalculate build prefix (set it with
+# `./autogen.sh --prefix` when building libqalculate).
+LIBQALCULATE_PREFIX='libqalculate/'
+
+# Whether to statically link libqalculate.
+LIBQALCULATE_STATIC_LINK=1
 
 # [security] This controls setuid/setgid behaviour of qalculate-helper, and
 # requires some setup. You need to create a user and a group, get their uid and
@@ -25,6 +48,7 @@ QALCULATE_LIBRARY_PATH='/usr/lib/x86_64-linux-gnu/'
 #    built qalculate-helper executable
 # 5. Run `chmod 6755 qalculate-helper`
 # 6. Run `setcap cap_setgid+ep cap_setpcap+ep qalculate-helper`
+# Commenting this out degrades security.
 SETUID='500'
 
 # [security] This controls seccomp behaviour. Issues with seccomp manifest as
@@ -32,10 +56,12 @@ SETUID='500'
 # `dmesg` for the violated syscall and whitelist it in
 # qalculate/helper/src/security_util.cpp. If you can, do contact me with
 # replication instructions so I can fix it on the upstream.
+# Setting this to 0 degrades security.
 SECCOMP=1
 
 # [security] This controls whether the clone(2) syscall is whitelisted. For
 # reasons unknown to me, qalculate-helper will refuse to run in Docker unless
 # this is enables, but seems to run just fine without it outside of Docker.
 # This has no effect if SECCOMP is set to 0.
+# Setting this to 1 degrades security.
 SECCOMP_ALLOW_CLONE=0

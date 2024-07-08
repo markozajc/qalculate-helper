@@ -210,7 +210,6 @@ int main(int argc, char **argv) {
 		return 1;
 
 	auto *calc = new Calculator(true);
-	do_defang_calculator(calc);
 	try {
 		if (argc == 2) {
 			if (strcmp(argv[1], COMMAND_UPDATE) == 0)

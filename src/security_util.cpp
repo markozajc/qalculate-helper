@@ -54,14 +54,6 @@ void do_setuid() {
 #endif
 }
 
-void do_defang_calculator(Calculator *calc) {
-	calc->getActiveFunction("command")->destroy(); // rce
-#ifdef HAS_PLOT
-	calc->getActiveFunction("plot")->destroy(); // wouldn't work
-#endif
-	calc->getActiveVariable("uptime")->destroy(); // information leakage
-}
-
 #ifdef SECCOMP
 static int now_year;
 static int now_month;
