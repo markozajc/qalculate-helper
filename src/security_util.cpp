@@ -90,6 +90,13 @@ void do_seccomp() {
 	now_usec = tv.tv_usec;
 	now_sec = tv.tv_sec;
 
+	setenv("QALCULATE_USER_DIR", "/", 1);
+	// Despite having global definitions compiled in, libqalculate will still attempt to load local definitions in some
+	// cirsumstances (e.g. when using a dataset function such as Planets). This results in a call to util.cc:buildPath(),
+	// which will in turn result to a nasty getpwuid() and getuid() if QALCULATE_USER_DIR, XDG_DATA_HOME are unset. These
+	// calls in turn require openat and getcwd syscalls respectively, which can be avoided by simply setting either of
+	// these environment variables to a bogus value.
+
 	scmp_filter_ctx ctx;
 	ctx = seccomp_init(SCMP_ACT_KILL_PROCESS);
 	/*   0 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0);
@@ -108,10 +115,12 @@ void do_seccomp() {
 	/* 202 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(futex), 0);
 	/* 230 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_nanosleep), 0);
 	/* 231 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
-	/* 262 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 0);
 	/* 273 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_robust_list), 0);
 	/* 334 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rseq), 0);
 	/* 435 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone3), 0);
+
+	// we can't read files anyway, no point in pretending they exist
+	/* 262 */seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOENT), SCMP_SYS(newfstatat), 0);
 	int err = seccomp_load(ctx);
 	if (err) {
 		printf("couldn't seccomp: %d\n", err);
