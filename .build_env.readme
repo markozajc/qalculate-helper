@@ -24,7 +24,7 @@
 
 # This option points to the libqalculate build prefix (set it with
 # `./autogen.sh --prefix` when building libqalculate).
-LIBQALCULATE_PREFIX='libqalculate/'
+LIBQALCULATE_PREFIX=libqalculate/
 
 # Whether to statically link libqalculate.
 LIBQALCULATE_STATIC_LINK=1
