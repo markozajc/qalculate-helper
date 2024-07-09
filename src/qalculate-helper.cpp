@@ -18,6 +18,7 @@
 #include <config.h>
 #include <exchange_update_exception.h>
 #include <libqalculate/Calculator.h>
+#include <libqalculate/DataSet.h>
 #include <libqalculate/includes.h>
 #include <libqalculate/MathStructure.h>
 #include <security_util.h>
@@ -126,7 +127,7 @@ MathStructure evaluate_all(const vector<string> &expressions, const EvaluationOp
 void print_result(Calculator *calc, const MathStructure &result_struct, const PrintOptions &po, int mode,
 				  bool &approximate) {
 	string result = calc->print(result_struct, TIMEOUT_PRINT, po, false, mode_set(mode, MODE_NOCOLOR) ? 0 : 1,
-								TAG_TYPE_TERMINAL);
+			TAG_TYPE_TERMINAL);
 
 	if (ends_with(result, calc->timedOutString())) {
 		throw timeout_exception();
@@ -144,7 +145,7 @@ static EvaluationOptions get_evaluationoptions() {
 	eo.approximation = APPROXIMATION_TRY_EXACT;
 	eo.parse_options.unknowns_enabled = false;
 	// eo.sync_units = false; // causes issues with monetary conversion, eg x usd > 1 eur. no idea why I
-	                          // enabled this in the first place
+	// enabled this in the first place
 	return eo;
 }
 
@@ -166,13 +167,23 @@ static PrintOptions get_printoptions(int base, bool *approximate) {
 	return po;
 }
 
-static void evaluate(Calculator *calc, const vector<string> &expressions, unsigned int mode, int base) {
+static void load_calculator(Calculator *calc) {
 	calc->setExchangeRatesWarningEnabled(false);
 	calc->loadExchangeRates();
 	calc->loadGlobalDefinitions();
 
-	bool approximate = false;
+#ifdef LIBQALCULATE_PRELOAD_DATASETS
+	DataSet *set = calc->getDataSet(1); // getDataSet() is 1-indexed for some reason
+	size_t i = 2;
+	while (set) {
+		set->loadObjects();
+		set = calc->getDataSet(i++);
+	}
+#endif
+}
 
+static void evaluate(Calculator *calc, const vector<string> &expressions, unsigned int mode, int base) {
+	bool approximate = false;
 	PrintOptions po = get_printoptions(base, &approximate);
 	EvaluationOptions eo = get_evaluationoptions();
 	set_precision(calc, mode, eo, po);
@@ -210,6 +221,7 @@ int main(int argc, char **argv) {
 		return 1;
 
 	auto *calc = new Calculator(true);
+	do_defang_calculator(calc);
 	try {
 		if (argc == 2) {
 			if (strcmp(argv[1], COMMAND_UPDATE) == 0)
@@ -217,8 +229,9 @@ int main(int argc, char **argv) {
 			else
 				return 1;
 		} else {
+			load_calculator(calc);
 			evaluate(calc, parseExpressions(stringstream(argv[1])), std::strtoul(argv[2], nullptr, 10),
-					 std::strtol(argv[3], nullptr, 10));
+					std::strtol(argv[3], nullptr, 10));
 		}
 
 	} catch (const qalculate_exception &e) {

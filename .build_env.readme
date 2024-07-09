@@ -1,33 +1,27 @@
 ## Set these options to your liking and, rename the file to .build_env, and run
 ## `make` to build.
 
-## /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\
-## /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\
-##
-##    qalculate-helper assumes that libqalculate is compiled with
-##    --without-gnuplot-call, --disbale-insecure, and
-##    --enable-compiled-definitions. This most likely means you can't use your
-##    distribution's libqalculate package. You pass these options to autogen.sh
-##    when compiling libqalculate. Without the first two, you WILL BE prone to
-##    RCE (remote code execution) attacks via the command() function. Without
-##    the last one, dataset commands (eg. `planet()`) will not work due to
-##    seccomp violations.
-##
-##    If you're not linking statically, you'll also have to ensure the right
-##    libqalculate is loaded at runtime - you can verify with `ldd`. If not,
-##    set the LD_LIBRARY_PATH environment variable or use static linking.
-##
-##    YOU HAVE BEEN WARNED
-##
-## /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\
-## /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\ DANGER /!\
-
 # This option points to the libqalculate build prefix (set it with
 # `./autogen.sh --prefix` when building libqalculate).
 LIBQALCULATE_PREFIX=libqalculate/
 
 # Whether to statically link libqalculate.
 LIBQALCULATE_STATIC_LINK=1
+
+# Whether to preload datasets - used for planet() and atom() - before
+# seccomping. This slightly degrades startup time, but allows the dataset
+# functions to work with seccomp even if libqalculate was not compiled with the
+# --enable-compiled-definitions flag. You can disable this if SECCOMP is set to
+# 0 or if libqalculate was compiled with --enable-compiled-definitions.
+LIBQALCULATE_PRELOAD_DATASETS=1
+
+# [security] Whether to "defang" libqalculate by removing dangerous functions
+# at runtime. Only disable this if libqalculate is compiled with
+# --disable-insecure and --without-gnuplot-call (these flags are passed to
+# ./autogen.sh when building libqalculate). If you don't know whether or not
+# your libqalculate is compiled with these options, leave this flag enabled.
+# Setting this to 0 may degrade security.
+LIBQALCULATE_DEFANG=1
 
 # [security] This controls setuid/setgid behaviour of qalculate-helper, and
 # requires some setup. You need to create a user and a group, get their uid and
@@ -65,3 +59,7 @@ SECCOMP=1
 # This has no effect if SECCOMP is set to 0.
 # Setting this to 1 degrades security.
 SECCOMP_ALLOW_CLONE=0
+
+# Whether to make the executable easy to debug. Only enable if you need it, as
+# it sacrifices performance and security.
+DEBUG=0

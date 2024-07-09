@@ -24,6 +24,21 @@
 #warning "Not doing seccomp, do not use in production!"
 #endif
 
+#ifdef LIBQALCULATE_DEFANG
+static void destroy_if_exists(ExpressionItem *item) {
+	if (item)
+		item->destroy();
+}
+
+void do_defang_calculator(Calculator *calc) {
+	destroy_if_exists(calc->getActiveFunction("command")); // rce
+	destroy_if_exists(calc->getActiveFunction("plot")); // wouldn't work, possible rce
+	destroy_if_exists(calc->getActiveVariable("uptime")); // information leakage
+}
+#else
+void do_defang_calculator(Calculator*) {}
+#endif
+
 void do_setuid() {
 #ifdef UID
 	if (setgroups(0, {})) {
@@ -42,7 +57,7 @@ void do_setuid() {
 	}
 
 	capng_clear(CAPNG_SELECT_BOTH);
-	if (capng_update(CAPNG_DROP, (capng_type_t)(CAPNG_EFFECTIVE | CAPNG_PERMITTED), CAP_SETGID)) {
+	if (capng_update(CAPNG_DROP, static_cast<capng_type_t>(CAPNG_EFFECTIVE | CAPNG_PERMITTED), CAP_SETGID)) {
 		printf("couldn't drop caps: can't select\n");
 		abort();
 	}
@@ -98,7 +113,11 @@ void do_seccomp() {
 	// these environment variables to a bogus value.
 
 	scmp_filter_ctx ctx;
+#ifdef ENABLE_DEBUG
+	ctx = seccomp_init(SCMP_ACT_TRAP);
+#else
 	ctx = seccomp_init(SCMP_ACT_KILL_PROCESS);
+#endif
 	/*   0 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0);
 	/*   1 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);
 	/*   9 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
