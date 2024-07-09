@@ -134,12 +134,11 @@ void do_seccomp() {
 	/* 202 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(futex), 0);
 	/* 230 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_nanosleep), 0);
 	/* 231 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);
+	/* 262 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(newfstatat), 0);
 	/* 273 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(set_robust_list), 0);
 	/* 334 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rseq), 0);
 	/* 435 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone3), 0);
 
-	// we can't read files anyway, no point in pretending they exist
-	/* 262 */seccomp_rule_add(ctx, SCMP_ACT_ERRNO(ENOENT), SCMP_SYS(newfstatat), 0);
 	int err = seccomp_load(ctx);
 	if (err) {
 		printf("couldn't seccomp: %d\n", err);

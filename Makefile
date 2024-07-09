@@ -8,7 +8,7 @@ FLAGS+=-Wl,-z now
 ifeq ($(LIBQALCULATE_STATIC_LINK), 1)
 	FLAGS+=-Wl,-z muldefs
 	ifneq ($(origin LIBQALCULATE_PREFIX), undefined)
-		FLAGS+=${LIBQALCULATE_PREFIX}/lib/libqalculate.a
+		STATIC_LIBS+=${LIBQALCULATE_PREFIX}/lib/libqalculate.a
 	else
 		FLAGS+=-Wl,-Bstatic
 		FLAGS+=-lqalculate
@@ -67,8 +67,14 @@ ifeq ($(DEBUG), 1)
 	FLAGS+=-DENABLE_DEBUG
 endif
 
+FILES+=src/security_util.cpp
+FILES+=src/exchange_update_exception.cpp
+FILES+=src/qalculate_exception.cpp
+FILES+=src/qalculate-helper.cpp
+FILES+=src/timeout_exception.cpp
+
 all:
-	g++ src/security_util.cpp src/exchange_update_exception.cpp src/qalculate_exception.cpp src/qalculate-helper.cpp src/timeout_exception.cpp $(FLAGS)
+	g++ $(FILES) $(STATIC_LIBS) $(FLAGS)
 	@if [ $(DEBUG) != 1 ]; then\
 		strip $(NAME);\
 	fi
