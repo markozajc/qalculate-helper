@@ -12,7 +12,8 @@ LIBQALCULATE_STATIC_LINK=1
 # seccomping. This slightly degrades startup time, but allows the dataset
 # functions to work with seccomp even if libqalculate was not compiled with the
 # --enable-compiled-definitions flag. You can disable this if SECCOMP is set to
-# 0 or if libqalculate was compiled with --enable-compiled-definitions.
+# 0 or if libqalculate was compiled with --enable-compiled-definitions (pass it
+# to ./autogen.sh when building libqalculate).
 LIBQALCULATE_PRELOAD_DATASETS=1
 
 # [security] Whether to "defang" libqalculate by removing dangerous functions
