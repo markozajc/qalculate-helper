@@ -10,11 +10,10 @@ dependencies = []
 flags = []
 link_flags = []
 
-#libqalculate = dependency('libqalculate', static: get_option('libqalculate_static_link'))
 libqalculate = dependency('libqalculate')
 if get_option('libqalculate_static_link')
 	dependencies += cpp.find_library('qalculate', dirs: libqalculate.get_variable('libdir'), static: true)
-	dependencies += libqalculate.partial_dependency(compile_args: true, includes: true, link_args: true, sources: true)
+	dependencies += libqalculate.partial_dependency(compile_args: true, includes: true, sources: true)
 	dependencies += dependency('mpfr')
 	dependencies += dependency('icu-uc')
 	dependencies += dependency('libxml-2.0')
