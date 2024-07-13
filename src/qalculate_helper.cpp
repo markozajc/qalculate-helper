@@ -16,7 +16,6 @@
  */
 
 #include <config.h>
-#include <exchange_update_exception.h>
 #include <libqalculate/Calculator.h>
 #include <libqalculate/DataSet.h>
 #include <libqalculate/includes.h>
@@ -26,9 +25,9 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
-#include <cstring>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 using std::string;
@@ -37,6 +36,7 @@ using std::getline;
 using std::vector;
 using std::string_view;
 using std::size_t;
+using std::pair;
 
 #if __cplusplus >= 201703L
 #include <string_view>
@@ -60,12 +60,12 @@ const unsigned long MODE_PRECISION = 1 << 0;
 const unsigned long MODE_EXACT = 1 << 1;
 const unsigned long MODE_NOCOLOR = 1 << 2;
 
-static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &eo, unsigned long line_number,
-									 const string &expression) {
-	MathStructure result;
-	if (!calc.calculate(&result, calc.unlocalizeExpression(expression), TIMEOUT_CALC, eo))
-		throw timeout_exception();
+struct MathResult {
+		MathStructure input;
+		MathStructure output;
+};
 
+static void print_messages(unsigned long line_number, Calculator &calc) {
 	const CalculatorMessage *message;
 	while ((message = calc.message())) {
 		putchar(TYPE_MESSAGE);
@@ -88,7 +88,23 @@ static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &
 		putchar(SEPARATOR);
 		calc.nextMessage();
 	}
+}
+
+static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &eo, unsigned long line_number,
+									 const string &expression) {
+	MathStructure result;
+	if (!calc.calculate(&result, calc.unlocalizeExpression(expression), TIMEOUT_CALC, eo))
+		throw timeout_exception();
+	print_messages(line_number, calc);
 	return result;
+}
+
+static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &eo, unsigned long line_number,
+									 MathStructure expression) {
+	if (!calc.calculate(&expression, TIMEOUT_CALC, eo))
+		throw timeout_exception();
+	print_messages(line_number, calc);
+	return expression;
 }
 
 static bool mode_set(unsigned long mode, unsigned long test) {
@@ -110,21 +126,38 @@ static void set_precision(Calculator &calc, unsigned long mode, EvaluationOption
 	calc.setPrecision(precision);
 }
 
-MathStructure evaluate_all(Calculator &calc, const vector<string> &expressions, const EvaluationOptions &eo) {
+static MathResult evaluate_all(Calculator &calc, const vector<string> &expressions, const EvaluationOptions &eo) {
 	for (size_t i = 0; i < expressions.size() - 1; ++i)
 		evaluate_single(calc, eo, i + 1, expressions[i]);
-	return evaluate_single(calc, eo, expressions.size(), expressions.back());
+
+	MathStructure parsed;
+	calc.parse(&parsed, calc.unlocalizeExpression(expressions.back()));
+
+	return {parsed, evaluate_single(calc, eo, expressions.size(), parsed)};
 }
 
-void print_result(Calculator &calc, const MathStructure &result_struct, const PrintOptions &po, int mode) {
-	string result = calc.print(result_struct, TIMEOUT_PRINT, po, false, mode_set(mode, MODE_NOCOLOR) ? 0 : 1,
+static void replace_booleans(Calculator &calc, MathResult &result) {
+	bool shouldReplace = result.input.isLogicalAnd() || result.input.isLogicalNot() || result.input.isLogicalOr()
+			|| result.input.isLogicalXor() || result.input.isComparison();
+
+	if (shouldReplace && result.output.representsBoolean()) {
+		if (result.output.isZero())
+			result.output.set(calc.getActiveVariable("false"));
+		else
+			result.output.set(calc.getActiveVariable("true"));
+	}
+}
+
+static void print_result(Calculator &calc, MathResult result_struct, const PrintOptions &po, int mode) {
+	replace_booleans(calc, result_struct);
+	string result = calc.print(result_struct.output, TIMEOUT_PRINT, po, false, mode_set(mode, MODE_NOCOLOR) ? 0 : 1,
 			TAG_TYPE_TERMINAL);
 
 	if (ends_with(result, calc.timedOutString()))
 		throw timeout_exception();
 
-	if (!result_struct.isComparison()) // comparisons (eg. "x = 1") already have a comparison sign
-		result = (result_struct.isApproximate() ? "≈ " : "= ") + result;
+	if (!result_struct.output.isComparison()) // comparisons (eg. "x = 1") already have a comparison sign
+		result = (result_struct.output.isApproximate() ? "≈ " : "= ") + result;
 
 	if (!mode_set(mode, MODE_NOCOLOR))
 		result.erase(result.length() - 4);
