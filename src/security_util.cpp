@@ -11,17 +11,13 @@
 #include <ctime>
 #include <string>
 
-#ifdef UID
+#ifdef SETUID
 #include <grp.h>
 #include <cap-ng.h>
-#else
-#warning "Not doing setuid/setgid, do not use in production!"
 #endif
 
 #ifdef SECCOMP
 #include <seccomp.h>
-#else
-#warning "Not doing seccomp, do not use in production!"
 #endif
 
 #ifdef LIBQALCULATE_DEFANG
@@ -30,35 +26,37 @@ static void destroy_if_exists(ExpressionItem *item) {
 		item->destroy();
 }
 
-void do_defang_calculator(Calculator *calc) {
-	destroy_if_exists(calc->getActiveFunction("command")); // rce
-	destroy_if_exists(calc->getActiveFunction("plot")); // wouldn't work, possible rce
-	destroy_if_exists(calc->getActiveVariable("uptime")); // information leakage
+void do_defang_calculator(Calculator &calc) {
+	destroy_if_exists(calc.getActiveFunction("command")); // rce
+	destroy_if_exists(calc.getActiveFunction("plot")); // wouldn't work, possible rce
+	destroy_if_exists(calc.getActiveVariable("uptime")); // information leakage
+	destroy_if_exists(calc.getActiveVariable("export")); // lfi
+	destroy_if_exists(calc.getActiveVariable("load")); // lfi
 }
 #else
-void do_defang_calculator(Calculator*) {}
+void do_defang_calculator(Calculator&) {}
 #endif
 
 void do_setuid() {
-#ifdef UID
+#ifdef SETUID
 	if (setgroups(0, {})) {
 		perror("couldn't remove groups");
 		abort();
 	}
 
-	if (setresgid(UID, UID, UID)) {
+	if (setresgid(SETUID_GID, SETUID_GID, SETUID_GID)) {
 		perror("couldn't set gid");
 		abort();
 	}
 
-	if (setresuid(UID, UID, UID)) {
+	if (setresuid(SETUID_UID, SETUID_UID, SETUID_UID)) {
 		perror("couldn't set uid");
 		abort();
 	}
 
 	capng_clear(CAPNG_SELECT_BOTH);
 	if (capng_update(CAPNG_DROP, static_cast<capng_type_t>(CAPNG_EFFECTIVE | CAPNG_PERMITTED), CAP_SETGID)) {
-		printf("couldn't drop caps: can't select\n");
+		perror("couldn't drop caps: can't select capabilities to drop\n");
 		abort();
 	}
 	int err = capng_apply(CAPNG_SELECT_BOTH);
@@ -114,12 +112,13 @@ void do_seccomp() {
 
 	scmp_filter_ctx ctx;
 #ifdef ENABLE_DEBUG
-	ctx = seccomp_init(SCMP_ACT_TRAP);
+	ctx = seccomp_init(SCMP_ACT_LOG);
 #else
 	ctx = seccomp_init(SCMP_ACT_KILL_PROCESS);
 #endif
 	/*   0 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read), 0);
 	/*   1 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write), 0);
+	/*   3 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(close), 0);
 	/*   9 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mmap), 0);
 	/*  10 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mprotect), 0);
 	/*  11 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(munmap), 0);
@@ -127,10 +126,9 @@ void do_seccomp() {
 	/*  13 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigaction), 0);
 	/*  14 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(rt_sigprocmask), 0);
 	/*  24 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(sched_yield), 0);
-#ifdef SECCOMP_ALLOW_CLONE
-	// qalculate-helper seems to refuse to run in docker without this for some reason
-	/*  56 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 0);
-#endif
+	/*  28 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(madvise), 0);
+	/*  56 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clone), 0); // required by docker
+	/*  60 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit), 0);
 	/* 202 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(futex), 0);
 	/* 230 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(clock_nanosleep), 0);
 	/* 231 */seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(exit_group), 0);

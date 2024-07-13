@@ -50,32 +50,24 @@ static bool ends_with(string_view str, string_view suffix) {
 const char TYPE_MESSAGE = 1;
 const char TYPE_RESULT = 2;
 
-const char RESULT_APPROXIMATION_NO = 1;
-const char RESULT_APPROXIMATION_YES = 2;
-
 const char LEVEL_INFO = 1;
 const char LEVEL_WARNING = 2;
 const char LEVEL_ERROR = 3;
 const char LEVEL_UNKNOWN = 4;
 const char SEPARATOR = 0;
 
-#define COMMAND_UPDATE "update"
-
 const unsigned long MODE_PRECISION = 1 << 0;
 const unsigned long MODE_EXACT = 1 << 1;
 const unsigned long MODE_NOCOLOR = 1 << 2;
 
-const int ETIMEOUT = 102;
-const int ECANTFETCH = 103;
-
-static MathStructure evaluate_single(Calculator *calc, const EvaluationOptions &eo, unsigned long line_number,
+static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &eo, unsigned long line_number,
 									 const string &expression) {
 	MathStructure result;
-	if (!calc->calculate(&result, calc->unlocalizeExpression(expression), TIMEOUT_CALC, eo))
+	if (!calc.calculate(&result, calc.unlocalizeExpression(expression), TIMEOUT_CALC, eo))
 		throw timeout_exception();
 
 	const CalculatorMessage *message;
-	while ((message = CALCULATOR->message())) {
+	while ((message = calc.message())) {
 		putchar(TYPE_MESSAGE);
 		switch (message->type()) {
 			case MESSAGE_INFORMATION:
@@ -94,7 +86,7 @@ static MathStructure evaluate_single(Calculator *calc, const EvaluationOptions &
 		printf("line %lu: ", line_number);
 		fputs(message->c_message(), stdout);
 		putchar(SEPARATOR);
-		calc->nextMessage();
+		calc.nextMessage();
 	}
 	return result;
 }
@@ -103,7 +95,7 @@ static bool mode_set(unsigned long mode, unsigned long test) {
 	return mode & test;
 }
 
-static void set_precision(Calculator *calc, unsigned long mode, EvaluationOptions &eo, PrintOptions &po) {
+static void set_precision(Calculator &calc, unsigned long mode, EvaluationOptions &eo, PrintOptions &po) {
 	int precision = PRECISION_DEFAULT;
 
 	if (mode_set(mode, MODE_EXACT)) {
@@ -115,28 +107,30 @@ static void set_precision(Calculator *calc, unsigned long mode, EvaluationOption
 		po.indicate_infinite_series = false;
 	}
 
-	calc->setPrecision(precision);
+	calc.setPrecision(precision);
 }
 
-MathStructure evaluate_all(const vector<string> &expressions, const EvaluationOptions &eo, Calculator *calc) {
+MathStructure evaluate_all(Calculator &calc, const vector<string> &expressions, const EvaluationOptions &eo) {
 	for (size_t i = 0; i < expressions.size() - 1; ++i)
 		evaluate_single(calc, eo, i + 1, expressions[i]);
 	return evaluate_single(calc, eo, expressions.size(), expressions.back());
 }
 
-void print_result(Calculator *calc, const MathStructure &result_struct, const PrintOptions &po, int mode,
-				  bool &approximate) {
-	string result = calc->print(result_struct, TIMEOUT_PRINT, po, false, mode_set(mode, MODE_NOCOLOR) ? 0 : 1,
+void print_result(Calculator &calc, const MathStructure &result_struct, const PrintOptions &po, int mode) {
+	string result = calc.print(result_struct, TIMEOUT_PRINT, po, false, mode_set(mode, MODE_NOCOLOR) ? 0 : 1,
 			TAG_TYPE_TERMINAL);
 
-	if (ends_with(result, calc->timedOutString())) {
+	if (ends_with(result, calc.timedOutString()))
 		throw timeout_exception();
 
-	} else {
-		putchar(TYPE_RESULT);
-		putchar(approximate ? RESULT_APPROXIMATION_YES : RESULT_APPROXIMATION_NO);
-		fputs(result.c_str(), stdout);
-	}
+	if (!result_struct.isComparison()) // comparisons (eg. "x = 1") already have a comparison sign
+		result = (result_struct.isApproximate() ? "≈ " : "= ") + result;
+
+	if (!mode_set(mode, MODE_NOCOLOR))
+		result.erase(result.length() - 4);
+
+	putchar(TYPE_RESULT);
+	fputs(result.c_str(), stdout);
 	putchar(SEPARATOR);
 }
 
@@ -149,7 +143,7 @@ static EvaluationOptions get_evaluationoptions() {
 	return eo;
 }
 
-static PrintOptions get_printoptions(int base, bool *approximate) {
+static PrintOptions get_printoptions(int base) {
 	PrintOptions po;
 	po.base = base;
 	po.number_fraction_format = FRACTION_DECIMAL;
@@ -163,46 +157,37 @@ static PrintOptions get_printoptions(int base, bool *approximate) {
 	po.show_ending_zeroes = false;
 	//po.preserve_precision = true;
 	//po.restrict_to_parent_precision = false;
-	po.is_approximate = approximate;
 	return po;
 }
 
-static void load_calculator(Calculator *calc) {
-	calc->setExchangeRatesWarningEnabled(false);
-	calc->loadExchangeRates();
-	calc->loadGlobalDefinitions();
+static void load_calculator(Calculator &calc) {
+	do_defang_calculator(calc);
+//	calc->setExchangeRatesWarningEnabled(false);
+	calc.loadExchangeRates();
+	calc.loadGlobalDefinitions();
 
 #ifdef LIBQALCULATE_PRELOAD_DATASETS
-	DataSet *set = calc->getDataSet(1); // getDataSet() is 1-indexed for some reason
+	DataSet *set = calc.getDataSet(1); // getDataSet() is 1-indexed for some reason
 	size_t i = 2;
 	while (set) {
 		set->loadObjects();
-		set = calc->getDataSet(i++);
+		set = calc.getDataSet(i++);
 	}
 #endif
 }
 
-static void evaluate(Calculator *calc, const vector<string> &expressions, unsigned int mode, int base) {
-	bool approximate = false;
-	PrintOptions po = get_printoptions(base, &approximate);
+static void evaluate(Calculator &calc, const vector<string> &expressions, unsigned int mode, int base) {
+	PrintOptions po = get_printoptions(base);
 	EvaluationOptions eo = get_evaluationoptions();
 	set_precision(calc, mode, eo, po);
 
-	calc->setMessagePrintOptions(po);
+	calc.setMessagePrintOptions(po);
 
 	do_seccomp();
 
-	auto result_struct = evaluate_all(expressions, eo, calc);
+	auto result_struct = evaluate_all(calc, expressions, eo);
 
-	print_result(calc, result_struct, po, mode, approximate);
-}
-
-static void update() {
-	if (!CALCULATOR->canFetch())
-		throw exchange_update_exception();
-
-	CALCULATOR->fetchExchangeRates(TIMEOUT_UPDATE);
-	// for some reason this returns false even when it's successful so I'm not going to check it
+	print_result(calc, result_struct, po, mode);
 }
 
 static vector<string> parseExpressions(stringstream input) {
@@ -217,25 +202,16 @@ static vector<string> parseExpressions(stringstream input) {
 int main(int argc, char **argv) {
 	do_setuid();
 
-	if (argc < 2)
+	if (argc != 4)
 		return 1;
 
-	auto *calc = new Calculator(true);
-	do_defang_calculator(calc);
+	Calculator calc(true);
 	try {
-		if (argc == 2) {
-			if (strcmp(argv[1], COMMAND_UPDATE) == 0)
-				update();
-			else
-				return 1;
-		} else {
-			load_calculator(calc);
-			evaluate(calc, parseExpressions(stringstream(argv[1])), std::strtoul(argv[2], nullptr, 10),
-					std::strtol(argv[3], nullptr, 10));
-		}
+		load_calculator(calc);
+		evaluate(calc, parseExpressions(stringstream(argv[1])), std::strtoul(argv[2], nullptr, 10),
+				std::strtol(argv[3], nullptr, 10));
 
 	} catch (const qalculate_exception &e) {
 		return e.getCode();
 	}
 }
-

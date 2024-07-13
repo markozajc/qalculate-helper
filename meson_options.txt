@@ -1,0 +1,18 @@
+option('exchange_rate_updater', type: 'feature', value: 'enabled',
+	description: 'Build exchange-rate-updater')
+option('seccomp', type: 'feature', value: 'enabled',
+	description: 'Enable SECCOMP jail')
+option('setuid', type: 'feature', value: 'enabled',
+	description: 'Enable setuid/setgid privilege de-escalation and supplementary group dropping')
+option('setuid_uid', type: 'integer', min: 0, value: 2000,
+	description: 'UID to set to if setuid feature is enabled')
+option('setuid_gid', type: 'integer', min: 0, value: 2000,
+	description: 'GID to set to if setuid feature is enabled')
+option('libqalculate_static_link', type: 'boolean', value: 'false',
+	description: 'Enable static linking of libqalculate')
+option('expect_custom_libqalculate', type: 'boolean', value: 'false',
+	description: 'Abort build if libqalculate is provided by a system package')
+option('defang_calculator', type: 'boolean', value: 'true',
+	description: 'Remove dangerous functions at startup - not necessary if libqalculate was compiled with --disable-insecure --without-gnuplot-call')
+option('preload_datasets', type: 'boolean', value: 'true',
+	description: 'Preload datasets to fix seccomp violation for dataset commands when libqalculate was compiled without --enable-compiled-definitions')
