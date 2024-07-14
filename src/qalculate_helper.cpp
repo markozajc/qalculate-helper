@@ -141,10 +141,10 @@ static void replace_booleans(Calculator &calc, MathResult &result) {
 			|| result.input.isLogicalXor() || result.input.isComparison();
 
 	if (shouldReplace && result.output.representsBoolean()) {
-		if (result.output.isZero())
-			result.output.set(calc.getActiveVariable("false"));
-		else
-			result.output.set(calc.getActiveVariable("true"));
+		auto *replacement = result.output.isZero() ? calc.getActiveVariable("false") : calc.getActiveVariable("true");
+
+		if (replacement)
+			result.output.set(replacement);
 	}
 }
 
