@@ -91,20 +91,12 @@ static void print_messages(unsigned long line_number, Calculator &calc) {
 }
 
 static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &eo, unsigned long line_number,
-									 const string &expression) {
+									 const string &expression, MathStructure *out_parsed = nullptr) {
 	MathStructure result;
-	if (!calc.calculate(&result, calc.unlocalizeExpression(expression), TIMEOUT_CALC, eo))
+	if (!calc.calculate(&result, calc.unlocalizeExpression(expression), TIMEOUT_CALC, eo, out_parsed))
 		throw timeout_exception();
 	print_messages(line_number, calc);
 	return result;
-}
-
-static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &eo, unsigned long line_number,
-									 MathStructure expression) {
-	if (!calc.calculate(&expression, TIMEOUT_CALC, eo))
-		throw timeout_exception();
-	print_messages(line_number, calc);
-	return expression;
 }
 
 static bool mode_set(unsigned long mode, unsigned long test) {
@@ -131,9 +123,8 @@ static MathResult evaluate_all(Calculator &calc, const vector<string> &expressio
 		evaluate_single(calc, eo, i + 1, expressions[i]);
 
 	MathStructure parsed;
-	calc.parse(&parsed, calc.unlocalizeExpression(expressions.back()));
-
-	return {parsed, evaluate_single(calc, eo, expressions.size(), parsed)};
+	MathStructure evaluated = evaluate_single(calc, eo, expressions.size(), expressions.back(), &parsed);
+	return {parsed, evaluated};
 }
 
 static void replace_booleans(Calculator &calc, MathResult &result) {
