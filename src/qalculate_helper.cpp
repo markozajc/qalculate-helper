@@ -211,7 +211,7 @@ static void evaluate(Calculator &calc, const vector<string> &expressions, unsign
 
 	do_seccomp();
 
-	auto result_struct = evaluate_all(calc, expressions, eo);
+	auto result_struct = evaluate_all(calc, expressions.empty() ? vector<string> {"0"} : expressions, eo);
 
 	print_result(calc, result_struct, po, mode);
 }
