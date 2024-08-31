@@ -128,10 +128,12 @@ static MathResult evaluate_all(Calculator &calc, const vector<string> &expressio
 }
 
 static void replace_booleans(Calculator &calc, MathResult &result) {
-	bool shouldReplace = result.input.isLogicalAnd() || result.input.isLogicalNot() || result.input.isLogicalOr()
+	bool inputBoolean = result.input.isLogicalAnd() || result.input.isLogicalNot() || result.input.isLogicalOr()
 			|| result.input.isLogicalXor() || result.input.isComparison();
 
-	if (shouldReplace && result.output.representsBoolean()) {
+	bool outputBoolean = result.output.size() >= 1 ? !result.output[0].isUnknown() : true;
+
+	if (inputBoolean && outputBoolean && result.output.representsBoolean()) {
 		auto *replacement = result.output.isZero() ? calc.getActiveVariable("false") : calc.getActiveVariable("true");
 
 		if (replacement)
