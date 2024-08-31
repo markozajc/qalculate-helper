@@ -78,7 +78,7 @@ Ensure you have the following prerequisites before compiling:
 qalculate-helper uses Meson as its build
 system. To compile with default build options, run the following:
 ```
-$ git clone git://zajc.eu.org/libot/qalculate-helper.git
+$ git clone git://zajc.tel/libot/qalculate-helper.git
 $ cd qalculate-helper
 $ meson setup build
 $ meson compile -C build
@@ -138,7 +138,7 @@ You can run `meson configure` to view all available options.
 	code 159). In case this happens, find the offending system call
 	in the kernel's ring buffer (run `dmesg`) and add it to the
 	whitelist in `src/security_util.cpp`. Please also report the
-	bug to `marko@zajc.eu.org`.
+	bug to `marko@zajc.tel`.
 
 	Disabling this degrades security.
 
