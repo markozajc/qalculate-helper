@@ -127,11 +127,19 @@ static MathResult evaluate_all(Calculator &calc, const vector<string> &expressio
 	return {parsed, evaluated};
 }
 
+static bool has_unknown(const MathStructure &ms) {
+	if(ms.size() == 0)
+		return ms.isUnknown();
+	else
+		return has_unknown(ms[0]);
+}
+
 static void replace_booleans(Calculator &calc, MathResult &result) {
 	bool inputBoolean = result.input.isLogicalAnd() || result.input.isLogicalNot() || result.input.isLogicalOr()
 			|| result.input.isLogicalXor() || result.input.isComparison();
 
-	bool outputBoolean = result.output.size() >= 1 ? !result.output[0].isUnknown() : true;
+
+	bool outputBoolean = !has_unknown(result.output);
 
 	if (inputBoolean && outputBoolean && result.output.representsBoolean()) {
 		auto *replacement = result.output.isZero() ? calc.getActiveVariable("false") : calc.getActiveVariable("true");
