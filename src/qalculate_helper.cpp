@@ -128,7 +128,7 @@ static MathResult evaluate_all(Calculator &calc, const vector<string> &expressio
 }
 
 static bool has_unknown(const MathStructure &ms) {
-	if(ms.size() == 0)
+	if (ms.size() == 0)
 		return ms.isUnknown();
 	else
 		return has_unknown(ms[0]);
@@ -137,7 +137,6 @@ static bool has_unknown(const MathStructure &ms) {
 static void replace_booleans(Calculator &calc, MathResult &result) {
 	bool inputBoolean = result.input.isLogicalAnd() || result.input.isLogicalNot() || result.input.isLogicalOr()
 			|| result.input.isLogicalXor() || result.input.isComparison();
-
 
 	bool outputBoolean = !has_unknown(result.output);
 
@@ -160,7 +159,7 @@ static void print_result(Calculator &calc, MathResult result_struct, const Print
 	if (!result_struct.output.isComparison()) // comparisons (eg. "x = 1") already have a comparison sign
 		result = (result_struct.output.isApproximate() ? "≈ " : "= ") + result;
 
-	if (!mode_set(mode, MODE_NOCOLOR))
+	if (!mode_set(mode, MODE_NOCOLOR) && ends_with(result, "\033[0m"))
 		result.erase(result.length() - 4);
 
 	putchar(TYPE_RESULT);
@@ -183,20 +182,16 @@ static PrintOptions get_printoptions(int base) {
 	po.number_fraction_format = FRACTION_DECIMAL;
 	po.interval_display = INTERVAL_DISPLAY_PLUSMINUS;
 	po.use_unicode_signs = true;
-	//po.min_decimals = MIN_DECIMALS;
 	po.time_zone = TIME_ZONE_UTC;
 	po.abbreviate_names = true;
 	po.spell_out_logical_operators = true;
 	po.allow_non_usable = true;
 	po.show_ending_zeroes = false;
-	//po.preserve_precision = true;
-	//po.restrict_to_parent_precision = false;
 	return po;
 }
 
 static void load_calculator(Calculator &calc) {
 	do_defang_calculator(calc);
-//	calc->setExchangeRatesWarningEnabled(false);
 	calc.loadExchangeRates();
 	calc.loadGlobalDefinitions();
 
