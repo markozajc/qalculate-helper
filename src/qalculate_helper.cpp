@@ -222,8 +222,14 @@ static void evaluate(Calculator &calc, const vector<string> &expressions, unsign
 static vector<string> parseExpressions(stringstream input) {
 	vector<string> result;
 	string expression;
-	while (std::getline(input, expression, '\n'))
+	while (std::getline(input, expression, '\n')) {
+		size_t pos = 0;
+		while ((pos = expression.find('\x1B', pos)) != string::npos) {
+			expression.replace(pos, 1, "^[");
+		}
+
 		result.push_back(expression);
+	}
 
 	return result;
 }
