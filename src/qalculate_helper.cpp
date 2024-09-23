@@ -185,7 +185,7 @@ static PrintOptions get_printoptions(int base) {
 	po.interval_display = INTERVAL_DISPLAY_PLUSMINUS;
 	po.use_unicode_signs = true;
 	po.time_zone = TIME_ZONE_UTC;
-	po.abbreviate_names = true;
+	po.abbreviate_names = false;
 	po.spell_out_logical_operators = true;
 	po.allow_non_usable = true;
 	po.show_ending_zeroes = false;
