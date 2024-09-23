@@ -65,7 +65,7 @@ struct MathResult {
 		MathStructure output;
 };
 
-static void print_messages(unsigned long line_number, Calculator &calc) {
+static void print_messages(Calculator &calc, unsigned long line_number, bool is_multiline) {
 	const CalculatorMessage *message;
 	while ((message = calc.message())) {
 		putchar(TYPE_MESSAGE);
@@ -83,7 +83,8 @@ static void print_messages(unsigned long line_number, Calculator &calc) {
 				putchar(LEVEL_UNKNOWN);
 				break;
 		}
-		printf("line %lu: ", line_number);
+		if (is_multiline)
+			printf("line %lu: ", line_number);
 		fputs(message->c_message(), stdout);
 		putchar(SEPARATOR);
 		calc.nextMessage();
@@ -91,11 +92,11 @@ static void print_messages(unsigned long line_number, Calculator &calc) {
 }
 
 static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &eo, unsigned long line_number,
-									 const string &expression, MathStructure *out_parsed = nullptr) {
+									 bool is_multiline, const string &expression, MathStructure *out_parsed = nullptr) {
 	MathStructure result;
 	if (!calc.calculate(&result, calc.unlocalizeExpression(expression), TIMEOUT_CALC, eo, out_parsed))
 		throw timeout_exception();
-	print_messages(line_number, calc);
+	print_messages(calc, line_number, is_multiline);
 	return result;
 }
 
@@ -120,10 +121,11 @@ static void set_precision(Calculator &calc, unsigned long mode, EvaluationOption
 
 static MathResult evaluate_all(Calculator &calc, const vector<string> &expressions, const EvaluationOptions &eo) {
 	for (size_t i = 0; i < expressions.size() - 1; ++i)
-		evaluate_single(calc, eo, i + 1, expressions[i]);
+		evaluate_single(calc, eo, i + 1, true, expressions[i]);
 
 	MathStructure parsed;
-	MathStructure evaluated = evaluate_single(calc, eo, expressions.size(), expressions.back(), &parsed);
+	MathStructure evaluated = evaluate_single(calc, eo, expressions.size(), expressions.size() > 1, expressions.back(),
+			&parsed);
 	return {parsed, evaluated};
 }
 
