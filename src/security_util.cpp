@@ -137,6 +137,7 @@ void do_seccomp() {
 	/*   0 */::checked_seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(read));
 	/*   1 */::checked_seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(write));
 	/*   3 */::checked_seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(close));
+	/*   5 */::checked_seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(fstat));
 	/*   9 */::checked_seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mmap));
 	/*  10 */::checked_seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(mprotect));
 	/*  11 */::checked_seccomp_rule_add(ctx, SCMP_ACT_ALLOW, SCMP_SYS(munmap));
