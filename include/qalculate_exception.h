@@ -4,12 +4,12 @@
 #include <stdexcept>
 
 class qalculate_exception : public std::runtime_error {
+	public:
+		int get_code() const;
+
 	protected:
 		int code;
 
-		qalculate_exception(int code);
-
-	public:
-		int getCode() const;
+		explicit qalculate_exception(int code);
 };
 

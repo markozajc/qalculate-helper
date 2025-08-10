@@ -39,7 +39,7 @@ using std::size_t;
 using std::pair;
 
 #if __cplusplus >= 201703L
-#include <string_view>
+#include <string_view> // NOSONAR
 
 static bool ends_with(string_view str, string_view suffix) {
 	return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
@@ -68,25 +68,25 @@ struct MathResult {
 static void print_messages(Calculator &calc, unsigned long line_number, bool is_multiline) {
 	const CalculatorMessage *message;
 	while ((message = calc.message())) {
-		putchar(TYPE_MESSAGE);
+		::putchar(::TYPE_MESSAGE);
 		switch (message->type()) {
 			case MESSAGE_INFORMATION:
-				putchar(LEVEL_INFO);
+				::putchar(::LEVEL_INFO);
 				break;
 			case MESSAGE_WARNING:
-				putchar(LEVEL_WARNING);
+				::putchar(::LEVEL_WARNING);
 				break;
 			case MESSAGE_ERROR:
-				putchar(LEVEL_ERROR);
+				::putchar(::LEVEL_ERROR);
 				break;
 			default:
-				putchar(LEVEL_UNKNOWN);
+				::putchar(::LEVEL_UNKNOWN);
 				break;
 		}
 		if (is_multiline)
-			printf("line %lu: ", line_number);
-		fputs(message->c_message(), stdout);
-		putchar(SEPARATOR);
+			::printf("line %lu: ", line_number);
+		::fputs(message->c_message(), stdout);
+		::putchar(::SEPARATOR);
 		calc.nextMessage();
 	}
 }
@@ -96,22 +96,22 @@ static MathStructure evaluate_single(Calculator &calc, const EvaluationOptions &
 	MathStructure result;
 	if (!calc.calculate(&result, calc.unlocalizeExpression(expression), TIMEOUT_CALC, eo, out_parsed))
 		throw timeout_exception();
-	print_messages(calc, line_number, is_multiline);
+	::print_messages(calc, line_number, is_multiline);
 	return result;
 }
 
-static bool mode_set(unsigned long mode, unsigned long test) {
+[[nodiscard]] static bool mode_set(unsigned long mode, unsigned long test) {
 	return mode & test;
 }
 
 static void set_precision(Calculator &calc, unsigned long mode, EvaluationOptions &eo, PrintOptions &po) {
 	int precision = PRECISION_DEFAULT;
 
-	if (mode_set(mode, MODE_EXACT)) {
+	if (::mode_set(mode, ::MODE_EXACT)) {
 		eo.approximation = APPROXIMATION_EXACT;
 		po.number_fraction_format = FRACTION_DECIMAL_EXACT;
 
-	} else if (mode_set(mode, MODE_PRECISION)) {
+	} else if (::mode_set(mode, ::MODE_PRECISION)) {
 		precision = PRECISION_HIGH;
 		po.indicate_infinite_series = false;
 	}
@@ -121,28 +121,28 @@ static void set_precision(Calculator &calc, unsigned long mode, EvaluationOption
 
 static MathResult evaluate_all(Calculator &calc, const vector<string> &expressions, const EvaluationOptions &eo) {
 	for (size_t i = 0; i < expressions.size() - 1; ++i)
-		evaluate_single(calc, eo, i + 1, true, expressions[i]);
+		::evaluate_single(calc, eo, i + 1, true, expressions[i]);
 
 	MathStructure parsed;
-	MathStructure evaluated = evaluate_single(calc, eo, expressions.size(), expressions.size() > 1, expressions.back(),
-			&parsed);
+	MathStructure evaluated = ::evaluate_single(calc, eo, expressions.size(), expressions.size() > 1,
+			expressions.back(), &parsed);
 	return {parsed, evaluated};
 }
 
-static bool has_unknown(const MathStructure &ms) {
+[[nodiscard]] static bool has_unknown(const MathStructure &ms) {
 	if (ms.size() == 0)
 		return ms.isUnknown();
 	else
-		return has_unknown(ms[0]);
+		return ::has_unknown(ms[0]);
 }
 
 static void replace_booleans(Calculator &calc, MathResult &result) {
-	bool inputBoolean = result.input.isLogicalAnd() || result.input.isLogicalNot() || result.input.isLogicalOr()
+	bool input_boolean = result.input.isLogicalAnd() || result.input.isLogicalNot() || result.input.isLogicalOr()
 			|| result.input.isLogicalXor() || result.input.isComparison();
 
-	bool outputBoolean = !has_unknown(result.output);
+	bool output_boolean = !::has_unknown(result.output);
 
-	if (inputBoolean && outputBoolean && result.output.representsBoolean()) {
+	if (input_boolean && output_boolean && result.output.representsBoolean()) {
 		auto *replacement = result.output.isZero() ? calc.getActiveVariable("false") : calc.getActiveVariable("true");
 
 		if (replacement)
@@ -150,23 +150,23 @@ static void replace_booleans(Calculator &calc, MathResult &result) {
 	}
 }
 
-static void print_result(Calculator &calc, MathResult result_struct, const PrintOptions &po, int mode) {
-	replace_booleans(calc, result_struct);
-	string result = calc.print(result_struct.output, TIMEOUT_PRINT, po, false, mode_set(mode, MODE_NOCOLOR) ? 0 : 1,
+static void print_result(Calculator &calc, MathResult result_struct, const PrintOptions &po, unsigned int mode) {
+	::replace_booleans(calc, result_struct);
+	string result = calc.print(result_struct.output, TIMEOUT_PRINT, po, false, ::mode_set(mode, ::MODE_NOCOLOR) ? 0 : 1,
 			TAG_TYPE_TERMINAL);
 
-	if (ends_with(result, calc.timedOutString()))
+	if (::ends_with(result, calc.timedOutString()))
 		throw timeout_exception();
 
 	if (!result_struct.output.isComparison()) // comparisons (eg. "x = 1") already have a comparison sign
 		result = (result_struct.output.isApproximate() ? "≈ " : "= ") + result;
 
-	if (!mode_set(mode, MODE_NOCOLOR) && ends_with(result, "\033[0m"))
+	if (!::mode_set(mode, ::MODE_NOCOLOR) && ::ends_with(result, "\033[0m"))
 		result.erase(result.length() - 4);
 
-	putchar(TYPE_RESULT);
-	fputs(result.c_str(), stdout);
-	putchar(SEPARATOR);
+	::putchar(::TYPE_RESULT);
+	::fputs(result.c_str(), stdout);
+	::putchar(::SEPARATOR);
 }
 
 static EvaluationOptions get_evaluationoptions() {
@@ -193,7 +193,7 @@ static PrintOptions get_printoptions(int base) {
 }
 
 static void load_calculator(Calculator &calc) {
-	do_defang_calculator(calc);
+	::do_defang_calculator(calc);
 	calc.loadExchangeRates();
 	calc.loadGlobalDefinitions();
 
@@ -208,20 +208,20 @@ static void load_calculator(Calculator &calc) {
 }
 
 static void evaluate(Calculator &calc, const vector<string> &expressions, unsigned int mode, int base) {
-	PrintOptions po = get_printoptions(base);
-	EvaluationOptions eo = get_evaluationoptions();
-	set_precision(calc, mode, eo, po);
+	PrintOptions po = ::get_printoptions(base);
+	EvaluationOptions eo = ::get_evaluationoptions();
+	::set_precision(calc, mode, eo, po);
 
 	calc.setMessagePrintOptions(po);
 
-	do_seccomp();
+	::do_seccomp();
 
-	auto result_struct = evaluate_all(calc, expressions.empty() ? vector<string> {"0"} : expressions, eo);
+	auto result_struct = ::evaluate_all(calc, expressions.empty() ? vector<string> {"0"} : expressions, eo);
 
-	print_result(calc, result_struct, po, mode);
+	::print_result(calc, result_struct, po, mode);
 }
 
-static vector<string> parseExpressions(stringstream input) {
+static vector<string> parse_expressions(stringstream input) {
 	vector<string> result;
 	string expression;
 	while (std::getline(input, expression, '\n')) {
@@ -237,18 +237,19 @@ static vector<string> parseExpressions(stringstream input) {
 }
 
 int main(int argc, char **argv) {
-	do_setuid();
+	::do_setuid();
 
 	if (argc != 4)
 		return 1;
 
 	Calculator calc(true);
 	try {
-		load_calculator(calc);
-		evaluate(calc, parseExpressions(stringstream(argv[1])), std::strtoul(argv[2], nullptr, 10),
-				std::strtol(argv[3], nullptr, 10));
+		::load_calculator(calc);
+		unsigned int mode = std::strtoul(argv[2], nullptr, 10); // NOSONAR narrowing is ok
+		int base = std::strtol(argv[3], nullptr, 10); // NOSONAR ditto
+		::evaluate(calc, ::parse_expressions(stringstream(argv[1])), mode, base);
 
 	} catch (const qalculate_exception &e) {
-		return e.getCode();
+		return e.get_code();
 	}
 }

@@ -7,6 +7,6 @@ qalculate_exception::qalculate_exception(int code) :
 		std::runtime_error(std::to_string(code).c_str()), code(code) {
 }
 
-int qalculate_exception::getCode() const {
+[[nodiscard]] int qalculate_exception::get_code() const {
 	return this->code;
 }

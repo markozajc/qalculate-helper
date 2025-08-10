@@ -6,7 +6,7 @@
 #include <security_util.h>
 
 int main() {
-	do_setuid();
+	::do_setuid();
 
 	Calculator calc(true);
 	if (!calc.canFetch())
